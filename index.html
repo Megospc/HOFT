@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Орда Мух</title>
+  <style>
+    h3, label, p, input {
+      font-family: Monospace, Sans-Serif;
+    }
+    #canvas {
+      border-radius: 5px;
+      border: 2px solid #808080;
+      width: 300px;
+      height: 300px;
+    }
+    #main {
+      width: 320px;
+      text-align: center;
+    }
+    #stop {
+      display: none;
+    }
+    #count {
+      width: 60px;
+    }
+    .prop {
+      margin-top: 20px;
+      margin-bottom: 20px;
+    }
+  </style>
+</head>
+<body>
+  <div id="main">
+    <div><h3>Орда Мух</h3></div>
+    <div><canvas id="canvas" width="1200" height="1200"></canvas></div>
+    <div class="prop">
+      <label for="speed">Скорость: </label>
+      <input id="speed" type="range" min="0" max="100" value="20">
+    </div>
+    <div class="prop">
+      <label for="wiggle">Колебание: </label>
+      <input id="wiggle" type="range" min="0" max="100" value="0">
+    </div>
+    <div class="prop">
+      <label for="zone">Зона: </label>
+      <input id="zone" type="range" min="0" max="100" value="20">
+    </div>
+    <div class="prop">
+      <label for="error">Погрешность: </label>
+      <input id="error" type="range" min="0" max="100" value="20">
+    </div>
+    <div class="prop">
+      <label for="count">Количество: </label>
+      <input id="count" type="number" onchange="reset()" value="300" valueAsNumber>
+    </div>
+    <p id="play" onclick="play()">Запуск</p>
+    <p id="stop" onclick="stop()">Пауза</p>
+    <p onclick="reset()">Перемешать</p>
+  </div>
+</body>
+</html>
+<script src="script.js"></script>
