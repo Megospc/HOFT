@@ -10,19 +10,15 @@ const scale = 4;
 const fps = 60;
 const S = x => x*scale;
 
-//Элементы:
-const speed = $('speed');
-const wiggle = $('wiggle');
-const zone = $('zone');
-const error = $('error');
-const count = $('count');
-const canvas = $('canvas');
-
-const ctx = canvas.getContext('2d');
+var speed, wiggle, zone, error, count, canvas, ctx, table, tbl;
 
 //Переменные:
 var pause = true;
+var lrframe = 0;
+var rframe = 0;
 var frame;
+var lrule;
+var rule;
 var arr;
 
 class Fly { //Муха
@@ -30,6 +26,7 @@ class Fly { //Муха
     this.speed();
     
     this.id = arr.length;
+    this.state = Math.floor(random(states.length));
     
     //Позиция:
     this.x = random(size);
@@ -47,8 +44,9 @@ class Fly { //Муха
       if (i == this.id) continue;
       
       const p = arr[i];
-      if (distance(this.x, p.x, this.y, p.y) < z) {
-        d += p.dir;
+      const r = rule[p.state][this.state];
+      if (r && distance(this.x, p.x, this.y, p.y) < z) {
+        d += r*p.dir;
         c++;
       }
     }
@@ -63,11 +61,16 @@ class Fly { //Муха
     this.y = cord(this.y+Math.sin(this.dir)*s);
   }
   render() { //Отрисовка
-    const d = this.dir/2/PI*360;
-    const r = d < 90 ? 0.5-d/180:(d > 270 ? 1-(d-270)/180:(d-90)/180);
-    const c = r*225;
+    if (states.length > 1) {
+      ctx.fillStyle = states[this.state];
+    } else {
+      const d = this.dir/2/PI*360;
+      const r = d < 90 ? 0.5-d/180:(d > 270 ? 1-(d-270)/180:(d-90)/180);
+      const c = r*225;
+      
+      ctx.fillStyle = "#"+hex(255-c)+"00"+hex(c);
+    }
     
-    ctx.fillStyle = "#"+hex(255-c)+"00"+hex(c);
     ctx.beginPath();
     ctx.arc(S(this.x), S(this.y), S(2), 0, PI*2);
     ctx.fill();
@@ -106,6 +109,39 @@ function frame_() { //Кадр
   for (let i = 0; i < arr.length; i++) arr[i].render();
   
   if (!pause) frame++;
+  
+  tbl.clearRect(0, 0, table.width, table.height);
+  
+  const l = states.length;
+  const s = 450/l;
+  
+  const a = ["#ffffff", "#0000a0"];
+  for (let x = 0; x < l; x++) for (let y = 0; y < l; y++) {
+    tbl.fillStyle = a[lrule[x][y]];
+    tbl.fillRect(x*s+50, y*s+50, s, s);
+    tbl.fillStyle = a[rule[x][y]]+hex((rframe-lrframe)/8*255);
+    tbl.fillRect(x*s+50, y*s+50, s, s);
+  }
+  
+  for (let i = 0; i < l; i++) {
+    tbl.fillStyle = states[i];
+    tbl.fillRect(i*s+50, 0, s, 10);
+    tbl.fillRect(0, i*s+50, 10, s);
+  }
+  
+  tbl.lineWidth = 3;
+  tbl.strokeStyle = "#a0a0a0";
+  
+  tbl.beginPath();
+  for (let i = 0; i < l; i++) {
+    tbl.moveTo(i*s+50, 0);
+    tbl.lineTo(i*s+50, 500);
+    tbl.moveTo(0, i*s+50);
+    tbl.lineTo(500, i*s+50);
+  }
+  tbl.stroke();
+  
+  rframe++;
 }
 
 function play() { //Запуск
@@ -113,7 +149,6 @@ function play() { //Запуск
   $('play').style.display = "none";
   $('stop').style.display = "block";
 }
-
 function stop() { //Остановка
   pause = true;
   $('stop').style.display = "none";
@@ -121,7 +156,112 @@ function stop() { //Остановка
 }
 
 
+function tablec(e) { //Клик таблицы
+  const r = table.getBoundingClientRect();
+  const x = (e.clientX-r.left)/100*500;
+  const y = (e.clientY-r.top)/100*500;
+  
+  if (x > 50 && x > 50) {
+    const s = 450/states.length;
+    const xa = Math.floor((x-50)/s);
+    const ya = Math.floor((y-50)/s);
+    
+    lrule = JSON.parse(JSON.stringify(rule));
+    rule[xa][ya] = (rule[xa][ya]+1)%2;
+    lrframe = rframe;
+  }
+}
+
 window.onload = function() {
+  const style = document.createElement('style');
+  style.innerHTML = `
+  h3, label, p, input {
+    font-family: Monospace, Sans-Serif;
+  }
+  #canvas {
+    border-radius: 5px;
+    border: 2px solid #808080;
+    width: 300px;
+    height: 300px;
+  }
+  #table {
+    width: 100px;
+    height: 100px;
+    border-radius: 3px;
+    border: 1px solid #a0a0a0;
+  }
+  #main {
+    width: 320px;
+    text-align: center;
+  }
+  #stop {
+    display: none;
+  }
+  #count {
+    width: 60px;
+  }
+  .prop {
+    margin-top: 20px;
+    margin-bottom: 20px;
+  }`;
+  document.head.appendChild(style);
+  
+  const main = document.createElement('div');
+  main.innerHTML = `
+  <div><canvas id="canvas" width="1200" height="1200"></canvas></div>
+  <div class="prop">
+    <label for="speed">Скорость: </label>
+    <input id="speed" type="range" min="0" max="100" value="20">
+  </div>
+  <div class="prop">
+    <label for="wiggle">Колебание: </label>
+    <input id="wiggle" type="range" min="0" max="100" value="0">
+  </div>
+  <div class="prop">
+    <label for="zone">Зона: </label>
+    <input id="zone" type="range" min="0" max="100" value="20">
+    </div>
+  <div class="prop">
+    <label for="error">Погрешность: </label>
+    <input id="error" type="range" min="0" max="100" value="20">
+  </div>
+  <div class="prop">
+    <label for="count">Количество: </label>
+    <input id="count" type="number" onchange="reset()" value="300" valueAsNumber>
+  </div>
+  <div class="prop">
+    <canvas id="table" width="500" height="500">
+  </div>
+  <p id="play" onclick="play()">Запуск</p>
+  <p id="stop" onclick="stop()">Пауза</p>
+  <p onclick="reset()">Перемешать</p>`;
+  $('main').appendChild(main);
+  
+  //Элементы:
+  speed = $('speed');
+  wiggle = $('wiggle');
+  zone = $('zone');
+  error = $('error');
+  count = $('count');
+  canvas = $('canvas');
+  table = $('table');
+  
+  ctx = canvas.getContext('2d');
+  tbl = table.getContext('2d');
+  
+  rule = [];
+  lrule = [];
+  for (let x = 0; x < states.length; x++) {
+    rule[x] = [];
+    lrule[x] = [];
+    for (let y = 0; y < states.length; y++) {
+      rule[x][y] = x == y ? 1:0;
+      lrule[x][y] = 0;
+    }
+  }
+  
+  table.addEventListener('click', tablec);
+  
   reset();
   setInterval(frame_, 1000/fps);
 };
