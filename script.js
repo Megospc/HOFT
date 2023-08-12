@@ -3,8 +3,8 @@ const $ = id => document.getElementById(id);
 const m = Math;
 const random = x => m.random()*x;
 const distance = (x0, x1, y0, y1) => m.sqrt(
-  m.min(m.abs(x1-x0), m.abs(size-x1+x0), m.abs(size-x1+x0))**2 + 
-  m.min(m.abs(y1-y0), m.abs(size-y1+y0), m.abs(size-y1+y0))**2
+  m.min(m.abs(x1-x0), m.abs(size-x1+x0), m.abs(size-x0+x1))**2 + 
+  m.min(m.abs(y1-y0), m.abs(size-y1+y0), m.abs(size-y0+y1))**2
 );
 const PI = m.PI;
 
@@ -265,6 +265,11 @@ window.onload = function() {
   <p id="stop" onclick="stop()">Пауза</p>
   <p onclick="reset()">Перемешать</p>`;
   $('main').appendChild(main);
+  
+  const viewport = document.createElement('meta');
+  viewport.name = "viewport";
+  viewport.content = "width=800px, user-scalable=no";
+  document.head.appendChild(viewport);
   
   //Элементы:
   speed = $('speed');
