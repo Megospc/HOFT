@@ -1,10 +1,15 @@
 //Утилиты:
 const $ = id => document.getElementById(id);
-const random = x => Math.random()*x;
-const distance = (x0, x1, y0, y1) => Math.sqrt((x1-x0)**2+(y1-y0)**2);
-const PI = Math.PI;
+const m = Math;
+const random = x => m.random()*x;
+const distance = (x0, x1, y0, y1) => m.sqrt(
+  m.min(m.abs(x1-x0), m.abs(size-x1+x0), m.abs(size-x1+x0))**2 + 
+  m.min(m.abs(y1-y0), m.abs(size-y1+y0), m.abs(size-y1+y0))**2
+);
+const PI = m.PI;
 
 //Константы:
+const czone = 50;
 const size = 300;
 const scale = 4;
 const fps = 60;
@@ -26,7 +31,7 @@ class Fly { //Муха
     this.speed();
     
     this.id = arr.length;
-    this.state = Math.floor(random(states.length));
+    this.state = m.floor(random(states.length));
     
     //Позиция:
     this.x = random(size);
@@ -35,7 +40,7 @@ class Fly { //Муха
   handler() { //Обработка
     //Дёрганье:
     const w = wiggle.value;
-    if (w) if (frame%Math.ceil(300/w) == 0) this.speed();
+    if (w) if (frame%m.ceil(300/w) == 0) this.speed();
     
     //Объединение:
     let d = 0, c = 0;
@@ -44,9 +49,9 @@ class Fly { //Муха
       if (i == this.id) continue;
       
       const p = arr[i];
-      const r = rule[p.state][this.state];
+      const r = [0, 1, -1][rule[p.state][this.state]];
       if (r && distance(this.x, p.x, this.y, p.y) < z) {
-        d += r*p.dir;
+        d += deg(r*p.dir);
         c++;
       }
     }
@@ -57,8 +62,8 @@ class Fly { //Муха
 
     //Движение:
     const s = speed.value/20;
-    this.x = cord(this.x+Math.cos(this.dir)*s);
-    this.y = cord(this.y+Math.sin(this.dir)*s);
+    this.x = cord(this.x+m.cos(this.dir)*s);
+    this.y = cord(this.y+m.sin(this.dir)*s);
   }
   render() { //Отрисовка
     if (states.length > 1) {
@@ -76,7 +81,7 @@ class Fly { //Муха
     ctx.fill();
   }
   speed() { //Случайное направление
-    this.dir = random(PI*2);
+    this.dir = random(PI*2)-PI;
   }
 }
 
@@ -85,9 +90,15 @@ function cord(x) { //Координаты
   while (x > size) x -= size;
   return x;
 }
+function deg(x) { //Поворот
+  while (x < -180) x += 180;
+  while (x > 180) x -= 180;
+  return x;
+}
+
 
 function hex(x) { //HEX
-  x = Math.min(Math.max(Math.floor(x), 0), 255);
+  x = m.min(m.max(m.floor(x), 0), 255);
   const h = x.toString(16);
   return x < 16 ? "0"+h:h;
 }
@@ -115,7 +126,7 @@ function frame_() { //Кадр
   const l = states.length;
   const s = 450/l;
   
-  const a = ["#ffffff", "#0000a0"];
+  const a = ["#ffffff", "#0000a0", "#a00000"];
   for (let x = 0; x < l; x++) for (let y = 0; y < l; y++) {
     tbl.fillStyle = a[lrule[x][y]];
     tbl.fillRect(x*s+50, y*s+50, s, s);
@@ -163,20 +174,34 @@ function tablec(e) { //Клик таблицы
   
   if (x > 50 && x > 50) {
     const s = 450/states.length;
-    const xa = Math.floor((x-50)/s);
-    const ya = Math.floor((y-50)/s);
+    const xa = m.floor((x-50)/s);
+    const ya = m.floor((y-50)/s);
     
     lrule = JSON.parse(JSON.stringify(rule));
-    rule[xa][ya] = (rule[xa][ya]+1)%2;
+    rule[xa][ya] = (rule[xa][ya]+1)%3;
     lrframe = rframe;
+  }
+}
+
+function click(e) { //Клик
+  const r = canvas.getBoundingClientRect();
+  const x = (e.clientX-r.left)/300*size;
+  const y = (e.clientY-r.top)/300*size;
+  
+  for (let i = 0; i < arr.length; i++) {
+    const p = arr[i];
+    if (distance(p.x, x, p.y, y) < czone) p.dir = m.atan2(x-p.x, y-p.y);
   }
 }
 
 window.onload = function() {
   const style = document.createElement('style');
   style.innerHTML = `
-  h3, label, p, input {
+  h3, label, p, input, a {
     font-family: Monospace, Sans-Serif;
+  }
+  h3 {
+    margin-bottom: 10px;
   }
   #canvas {
     border-radius: 5px;
@@ -200,6 +225,9 @@ window.onload = function() {
   #count {
     width: 60px;
   }
+  #back {
+    margin-bottom: 10px;
+  }
   .prop {
     margin-top: 20px;
     margin-bottom: 20px;
@@ -208,6 +236,7 @@ window.onload = function() {
   
   const main = document.createElement('div');
   main.innerHTML = `
+  <div id="back"><a href="index.html"><b>назад</b></a></div>
   <div><canvas id="canvas" width="1200" height="1200"></canvas></div>
   <div class="prop">
     <label for="speed">Скорость: </label>
@@ -261,6 +290,7 @@ window.onload = function() {
   }
   
   table.addEventListener('click', tablec);
+  canvas.addEventListener('click', click);
   
   reset();
   setInterval(frame_, 1000/fps);
