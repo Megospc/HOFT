@@ -268,7 +268,7 @@ window.onload = function() {
   
   const viewport = document.createElement('meta');
   viewport.name = "viewport";
-  viewport.content = "width=800px, user-scalable=no";
+  viewport.content = "width=800px";
   document.head.appendChild(viewport);
   
   //Элементы:
