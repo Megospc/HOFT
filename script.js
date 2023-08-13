@@ -91,8 +91,8 @@ function cord(x) { //Координаты
   return x;
 }
 function deg(x) { //Поворот
-  while (x < -180) x += 180;
-  while (x > 180) x -= 180;
+  while (x < -180) x += 360;
+  while (x > 180) x -= 360;
   return x;
 }
 
